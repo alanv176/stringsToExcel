@@ -18,12 +18,18 @@ import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+/*
+ * TODO: Make getSubstring optional
+ *       Find any string in a file
+ *           ['\"].*['\"] should work for single lines since greedy * will get to eol and then work back to last ' or "
+ */
+
 public class Generator {
 	
-	private Path dest = Paths.get("./tempFile.txt");
+	public static final Path tempFile = Paths.get("./tempFile.txt");
 	
-	public void saveDefaultRoute(String route){
-		route = route.replaceFirst("^~", System.getProperty("user.home"));
+	public static void saveDefaultRoute(String sourceRoute){
+		sourceRoute = sourceRoute.replaceFirst("^~", System.getProperty("user.home"));
 		try(Scanner s = new Scanner(System.in)){
 			System.out.println("Would you like to save this as the default route?(y/n)");
 			if(s.nextLine().equals("y")){
@@ -31,38 +37,39 @@ public class Generator {
 					System.out.println("Creating default.properties");
 					Properties prop = new Properties();
 					
-					prop.setProperty("source", route);
+					prop.setProperty("source", sourceRoute);
 					prop.store(output, null);	
 				}
 				catch(Exception e){
-					System.out.println("Problem creating file");
+					System.out.println("Problem creating default properties file");
 				}
 			}
 		}
 		catch(Exception e){
+			System.out.println("Problem in Generator.saveDefaultRoute");
 			System.out.println(e);
 	    }
 		finally{
-			generateXls(route);
+			generateXls(sourceRoute);
 		}
 	}
 	
-	public void useDefaultRoute(){
-		String route;
+	public static void useDefaultRoute(){
+		String sourceRoute;
 		try(FileInputStream input = new FileInputStream("default.properties")){
 			Properties prop = new Properties();
 
 			prop.load(input);
 
-			route = prop.getProperty("source");
+			sourceRoute = prop.getProperty("source");
 			
-			generateXls(route);
+			generateXls(sourceRoute);
 		}
 		catch(Exception err){
-			System.out.println("Please provide a route to source file:");
+			System.out.println("No defaults set, please provide a route to source file:");
 			try(Scanner s = new Scanner(System.in)){
-				route = s.nextLine();
-				saveDefaultRoute(route);
+				sourceRoute = s.nextLine();
+				saveDefaultRoute(sourceRoute);
 			}
 			catch(Exception e){
 				System.out.println("There was a problem with the route input");
@@ -71,12 +78,12 @@ public class Generator {
 		}
 	}
 	
-	public void getFile(String route){
+	public static void copyFile(String sourceRoute){
 		try{
-			Path source = Paths.get(route);
+			Path source = Paths.get(sourceRoute);
 
 			System.out.println("Copying file");
-			Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(source, tempFile, StandardCopyOption.REPLACE_EXISTING);
 
 		}
 		catch(Exception e){
@@ -86,8 +93,8 @@ public class Generator {
 		}
 	}
 	
-	public void getSubstring(){
-		try(Scanner contentScanner = new Scanner(dest).useDelimiter("\\Z")){
+	public static void getSubstring(){
+		try(Scanner contentScanner = new Scanner(tempFile).useDelimiter("\\Z")){
 			String content = contentScanner.next();
 			System.out.println("Substring obtained");
 			Pattern pattern = Pattern.compile("(?<LangEN>Lang_EN\\s?:\\s?\\{.*?\\})", Pattern.DOTALL);
@@ -96,7 +103,7 @@ public class Generator {
 			if(matcher.find()){
 				System.out.println("Lang_EN found");
 				String LangEN = matcher.group("LangEN");
-				Files.write(dest, LangEN.getBytes());
+				Files.write(tempFile, LangEN.getBytes());
 			}
 			else{
 				System.out.println("Substring not found");
@@ -111,12 +118,12 @@ public class Generator {
 
 	}
 	
-    public void generateXls(String route){
-    	getFile(route);
+    public static void generateXls(String sourceRoute){
+    	copyFile(sourceRoute);
     	getSubstring();
     	
     	try(FileOutputStream outputStream = new FileOutputStream(Paths.get("./blankTranslation.xlsx").toFile());
-    		Scanner language = new Scanner(dest);
+    		Scanner language = new Scanner(tempFile);
     		XSSFWorkbook workbook = new XSSFWorkbook();	){
     		
     		Pattern comment = Pattern.compile("^\\s*?#(.*$)");
@@ -180,7 +187,7 @@ public class Generator {
         	
             workbook.write(outputStream);
         			
-        	Files.delete(dest);
+        	Files.delete(tempFile);
         	System.out.println("Completed successfully");
     	} 	
     	catch(Exception e){
@@ -189,7 +196,7 @@ public class Generator {
     	}
     }
     
-    public String doMultiLine(Scanner s){
+    public static String doMultiLine(Scanner s){
     	//System.out.println("Doing multiline");
     	String currLine = s.nextLine();
     	String fullLine = "";
