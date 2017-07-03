@@ -55,6 +55,8 @@ public class Generator {
 			prop.load(input);
 
 			route = prop.getProperty("source");
+			
+			generateXls(route);
 		}
 		catch(Exception err){
 			System.out.println("Please provide a route to source file:");
@@ -118,15 +120,8 @@ public class Generator {
     		XSSFWorkbook workbook = new XSSFWorkbook();	){
     		
     		Pattern comment = Pattern.compile("^\\s*?#(.*$)");
-        	Pattern singleQuote = Pattern.compile(":\\s?'(.*)'$");
-        	Pattern doubleQuote = Pattern.compile(":\\s?\"(.*)\"$");
-        	Pattern multiLine = Pattern.compile(":\\s?['\"](.*?)[\\w\\.\\?]$");
-        	
-        	String currLine;
-        	Matcher commentMatcher;
-        	Matcher singleQuoteMatcher;
-        	Matcher doubleQuoteMatcher;
-        	Matcher multiLineMatcher;
+        	Pattern content = Pattern.compile(":\\s?['\"](.*)['\"]$");
+        	Pattern multiLine = Pattern.compile(":\\s?['\"](.*?)[^'\"]$");
         	
         	int colWidth = 255*70; //70 characters(each unit is 1/255 of a character)
         	
@@ -138,69 +133,56 @@ public class Generator {
         	
         	while(language.hasNextLine()){
         		//System.out.println("Creating sheet, at row " + rowCount);
-        		currLine = language.nextLine();
-        		commentMatcher = comment.matcher(currLine);
-        		singleQuoteMatcher = singleQuote.matcher(currLine);
-        		doubleQuoteMatcher = doubleQuote.matcher(currLine);
-        		multiLineMatcher = multiLine.matcher(currLine);
+        		String currLine = language.nextLine();
+        		Matcher commentMatcher = comment.matcher(currLine);
+        		Matcher singleLineMatcher = content.matcher(currLine);
+        		Matcher multiLineMatcher = multiLine.matcher(currLine);
         		
+        		String lineToAdd;
+        		XSSFFont font= workbook.createFont();
         		
         		if(commentMatcher.find()){
-        			rowCount += 2;
-        			Row row = sheet.createRow(rowCount);
-        			Cell cell = row.createCell(0);
-        		    cell.setCellValue(commentMatcher.group(1));
+        			rowCount++;
+        			lineToAdd = commentMatcher.group(1);
         			
-        			CellStyle style = workbook.createCellStyle();
-        			XSSFFont font= workbook.createFont();
-        			font.setBold(true);
-        			style.setFont(font);
-                    cell.setCellStyle(style);
+        			font.setBold(true);	
         		}
-        		else if(singleQuoteMatcher.find()){
-        			Row row = sheet.createRow(++rowCount);
-        			Cell cell = row.createCell(0);
-        			if(multiLineMatcher.find()){
-        				System.out.println("Doing multi, at row " + rowCount);
-            			cell.setCellValue(singleQuoteMatcher.group(1) + doMultiLine(language));
-            		}
-        			else{
-        				cell.setCellValue(singleQuoteMatcher.group(1));
-        			}
-        			
-        			CellStyle style = workbook.createCellStyle();
-                    style.setWrapText(true);
-                    if(currLine.length() > 70){
-                    	row.setHeight((short)(row.getHeight()*2));
-                    }
-                    cell.setCellStyle(style);
+        		else if(singleLineMatcher.find()){
+        			lineToAdd = singleLineMatcher.group(1);
         		}
-        		else if(doubleQuoteMatcher.find()){
-        			Row row = sheet.createRow(++rowCount);
-        			Cell cell = row.createCell(0);
-        			if(multiLineMatcher.find()){
-        				System.out.println("doing multi, at row " + rowCount);
-        				cell.setCellValue(doubleQuoteMatcher.group(1) + doMultiLine(language));
-            		}
-        			else{
-        				cell.setCellValue(doubleQuoteMatcher.group(1));
-        			}
-        			
-        			CellStyle style = workbook.createCellStyle();
-                    style.setWrapText(true);
-                    cell.setCellStyle(style);
+        		else if(multiLineMatcher.find()){
+    				System.out.println("doing multi, at row " + rowCount);
+    				lineToAdd = multiLineMatcher.group(1) + doMultiLine(language);
         		}
-//        		else{
-//        			System.out.println("The Matcher didn't find anything on this line");
-//        		}
+        		else{
+        			//System.out.println("The Matcher didn't find anything on this line");
+        			continue;
+        		}
+        		
+        		Row row = sheet.createRow(++rowCount);
+        		Cell cell = row.createCell(0);
+        		lineToAdd.replaceAll("\\", "");
+    		    cell.setCellValue(lineToAdd);
+    		    
+    		    /*
+    		     * Sets row height to accommodate for multiple lines
+    		     * Generally setWrapText(true) is enough, though there is a bug in libreOffice that requires this type of manual height setting
+    		     */
+//    		    if(lineToAdd.length() > 70){
+//                	row.setHeight((short)(row.getHeight()*(lineToAdd.length() / 70 + 1)));
+//                }
+    		    
+    		    CellStyle style = workbook.createCellStyle();
+                style.setWrapText(true);
+                style.setFont(font);
+                cell.setCellStyle(style);
         	}
         	
             workbook.write(outputStream);
         			
         	Files.delete(dest);
         	System.out.println("Completed successfully");
-    	}
-    	
+    	} 	
     	catch(Exception e){
     		System.out.println("Problem in generateXls");
     		System.exit(0);
@@ -212,16 +194,16 @@ public class Generator {
     	String currLine = s.nextLine();
     	String fullLine = "";
     	
-    	Pattern theEnd = Pattern.compile("(.+)['\"]$");	
+    	Pattern theEnd = Pattern.compile("\\s*(\\s.+)['\"]$");	
     	Matcher theEndMatcher = theEnd.matcher(currLine);
     	
     	while(!theEndMatcher.find()){
-    		fullLine += currLine;
+    		fullLine += " " + currLine.trim();
     		currLine = s.nextLine();
     		theEndMatcher = theEnd.matcher(currLine);
     	}
     	
-    	fullLine += theEndMatcher.group(0);
+    	fullLine += theEndMatcher.group(1);
     	
     	return fullLine;
     }
