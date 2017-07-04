@@ -7,8 +7,9 @@ package com.whatever.app;
  *       Use a file chooser instead of requiring user to manually type out path
  *       Print useful error messages and errors for each catch
  *       Comment code
- *       Rename variables
- *       Fix row height option for libre office
+ *       Allow for doing multiple files at once
+ *       Ask to use default or specify new path
+ *       Account for special symbols e.g euro
  */
 public class App 
 {

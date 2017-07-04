@@ -170,16 +170,16 @@ public class Generator {
         		
         		Row row = sheet.createRow(++rowCount);
         		Cell cell = row.createCell(0);
-        		lineToAdd.replaceAll("\\\\", "");
+        		lineToAdd = lineToAdd.replace("\\", "");
     		    cell.setCellValue(lineToAdd);
     		    
     		    /*
     		     * Sets row height to accommodate for multiple lines
     		     * Generally setWrapText(true) is enough, though there is a bug in libreOffice that requires this type of manual height setting
     		     */
-//    		    if(lineToAdd.length() > 70){
-//                	row.setHeight((short)(row.getHeight()*(lineToAdd.length() / 70 + 1)));
-//                }
+    		    if(lineToAdd.length() > 70){
+                	row.setHeight((short)(row.getHeight()+(lineToAdd.length() * 4 - lineToAdd.length() % 70)));
+                }
     		    
     		    CellStyle style = workbook.createCellStyle();
                 style.setWrapText(true);
@@ -235,7 +235,7 @@ public class Generator {
     		if(!hasExtension.find()){
     			fileName = fileName + "." + extension;
     		}
-    		System.out.print("Filename: " + fileName);
+    		System.out.println("Filename: " + fileName);
     		return fileName;
     	}
     	catch(Exception e){
