@@ -219,6 +219,11 @@ public class Generator {
     	return fullLine;
     }
     
+    /**
+     * Takes user input for file name, ensures it's valid and then adds extension if none is provided by the user
+     * @param extension the extension the file should have
+     * @return
+     */
     public static String createFileName(String extension){
     	try{
     		System.out.println("What would you like to name the new file?");
@@ -229,13 +234,16 @@ public class Generator {
     		Pattern fileExtension = Pattern.compile("\\." + extension + "$");
     		Matcher hasExtension = fileExtension.matcher(fileName);
     		
-    		if(isValid.find()){
+    		while(isValid.find()){
     			System.out.println("Please enter a valid filename");
-    			fileName = createFileName(extension);
+    			fileName = Utils.s.nextLine();
+    			hasExtension = fileExtension.matcher(fileName);
     		}
+    		
     		if(!hasExtension.find()){
     			fileName = fileName + "." + extension;
     		}
+    		
     		System.out.println("Filename: " + fileName);
     		return fileName;
     	}
@@ -245,5 +253,95 @@ public class Generator {
     		System.exit(0);
     	}
     	return "default." + extension;
+    }
+    
+    /**
+     * For use with the express command
+     * This method accepts all arguments needed when the jar is called
+     * This makes it easy to add the programs functionality to a script and not needing to
+     *   stop for user input
+     *   
+     * @param sourceFileRoute path to the source file from which to extract the strings
+     * @param pathToNewFile path to the file which will be created
+     */
+    
+    public static void generateXls(String sourceFileRoute, String pathToNewFile){
+    	copyFile(sourceFileRoute);
+    	getSubstring();
+    	pathToNewFile = pathToNewFile.replaceFirst("~", System.getProperty("user.home"));
+    	
+    	try(FileOutputStream outputStream = new FileOutputStream(Paths.get(pathToNewFile).toFile());
+    		Scanner language = new Scanner(Utils.tempFile);
+    		XSSFWorkbook workbook = new XSSFWorkbook();	){
+    		
+    		Pattern comment = Pattern.compile("^\\s*?#(.*$)");
+        	Pattern content = Pattern.compile(":\\s?['\"](.*)['\"]$");
+        	Pattern multiLine = Pattern.compile(":\\s?['\"](.*?)[^'\"]$");
+        	
+        	int colWidth = 255*70; //70 characters(each unit is 1/255 of a character)
+        	
+        	
+            XSSFSheet sheet = workbook.createSheet("AppTranslation");
+            sheet.setColumnWidth(0, colWidth);
+            sheet.setColumnWidth(1, colWidth);
+            int rowCount = 0;
+        	
+        	while(language.hasNextLine()){
+        		//System.out.println("Creating sheet, at row " + rowCount);
+        		String currLine = language.nextLine();
+        		Matcher commentMatcher = comment.matcher(currLine);
+        		Matcher singleLineMatcher = content.matcher(currLine);
+        		Matcher multiLineMatcher = multiLine.matcher(currLine);
+        		
+        		String lineToAdd;
+        		XSSFFont font= workbook.createFont();
+        		
+        		if(commentMatcher.find()){
+        			rowCount++;
+        			lineToAdd = commentMatcher.group(1);
+        			
+        			font.setBold(true);	
+        		}
+        		else if(singleLineMatcher.find()){
+        			lineToAdd = singleLineMatcher.group(1);
+        		}
+        		else if(multiLineMatcher.find()){
+    				System.out.println("doing multi, at row " + rowCount);
+    				lineToAdd = multiLineMatcher.group(1) + doMultiLine(language);
+        		}
+        		else{
+        			//System.out.println("The Matcher didn't find anything on this line");
+        			continue;
+        		}
+        		
+        		Row row = sheet.createRow(++rowCount);
+        		Cell cell = row.createCell(0);
+        		lineToAdd = lineToAdd.replace("\\", "");
+    		    cell.setCellValue(lineToAdd);
+    		    
+    		    /*
+    		     * Sets row height to accommodate for multiple lines
+    		     * Generally setWrapText(true) is enough, though there is a bug in libreOffice that requires this type of manual height setting
+    		     */
+    		    if(lineToAdd.length() > 70){
+                	row.setHeight((short)(row.getHeight()+(lineToAdd.length() * 4 - lineToAdd.length() % 70)));
+                }
+    		    
+    		    CellStyle style = workbook.createCellStyle();
+                style.setWrapText(true);
+                style.setFont(font);
+                cell.setCellStyle(style);
+        	}
+        	
+            workbook.write(outputStream);
+        			
+        	Files.delete(Utils.tempFile);
+        	System.out.println("Completed successfully");
+    	} 	
+    	catch(Exception e){
+    		System.out.println("Problem in generateXls");
+    		System.out.println(e);
+    		System.exit(0);
+    	}
     }
 }

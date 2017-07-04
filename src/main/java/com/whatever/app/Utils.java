@@ -10,6 +10,7 @@ import java.util.Scanner;
 public class Utils {
 	public static final Scanner s = new Scanner(System.in);
 	public static final Path tempFile = Paths.get("./tempFile.txt");
+	public static final Path defaultFile = Paths.get("./default.properties");
 	
 	public static void setDefaults(){
 		try(FileOutputStream output = new FileOutputStream("default.properties")){

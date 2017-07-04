@@ -1,5 +1,7 @@
 package com.whatever.app;
 
+import java.nio.file.Files;
+
 /*
  * TODO: Make this or another file that updates existing excel sheets
  *       Set defaults command that sets all defaults
@@ -48,8 +50,22 @@ public class App
 			break;
 			
 		case "reset":
-			System.out.println("");
+			try{
+				Files.delete(Utils.defaultFile);
+				System.out.println("Defaults removed");
+			}
+			catch(Exception e){
+				System.out.println("Defaults did not exist in the first place");
+			}
 			break;
+			
+		case "expressGen":
+			try{
+				Generator.generateXls(args[1], args[2]);
+			}
+			catch(Exception e){
+				System.out.println("Illegal arguments for expressGen, must specify source and path to created file. Use help expressGen for more details");
+			}
 			
 		case "help":
 			System.out.println("");
