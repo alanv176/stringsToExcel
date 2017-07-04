@@ -27,10 +27,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class Generator {
 	
 	public static final Path tempFile = Paths.get("./tempFile.txt");
+	private static Scanner s = new Scanner(System.in);
 	
 	public static void saveDefaultRoute(String sourceRoute){
 		sourceRoute = sourceRoute.replaceFirst("^~", System.getProperty("user.home"));
-		try(Scanner s = new Scanner(System.in)){
+		try{
 			System.out.println("Would you like to save this as the default route?(y/n)");
 			if(s.nextLine().equals("y")){
 				try(FileOutputStream output = new FileOutputStream("default.properties")){
@@ -67,7 +68,7 @@ public class Generator {
 		}
 		catch(Exception err){
 			System.out.println("No defaults set, please provide a route to source file:");
-			try(Scanner s = new Scanner(System.in)){
+			try{
 				sourceRoute = s.nextLine();
 				saveDefaultRoute(sourceRoute);
 			}
@@ -121,8 +122,9 @@ public class Generator {
     public static void generateXls(String sourceRoute){
     	copyFile(sourceRoute);
     	getSubstring();
+    	String createdFileName = createFileName("xlsx");
     	
-    	try(FileOutputStream outputStream = new FileOutputStream(Paths.get("./blankTranslation.xlsx").toFile());
+    	try(FileOutputStream outputStream = new FileOutputStream(Paths.get("./" + createdFileName).toFile());
     		Scanner language = new Scanner(tempFile);
     		XSSFWorkbook workbook = new XSSFWorkbook();	){
     		
@@ -168,7 +170,7 @@ public class Generator {
         		
         		Row row = sheet.createRow(++rowCount);
         		Cell cell = row.createCell(0);
-        		lineToAdd.replaceAll("\\", "");
+        		lineToAdd.replaceAll("\\\\", "");
     		    cell.setCellValue(lineToAdd);
     		    
     		    /*
@@ -192,6 +194,7 @@ public class Generator {
     	} 	
     	catch(Exception e){
     		System.out.println("Problem in generateXls");
+    		System.out.println(e);
     		System.exit(0);
     	}
     }
@@ -213,5 +216,33 @@ public class Generator {
     	fullLine += theEndMatcher.group(1);
     	
     	return fullLine;
+    }
+    
+    public static String createFileName(String extension){
+    	try{
+    		System.out.println("What would you like to name the new file?");
+    		String fileName = s.nextLine();
+    		
+    		Pattern validateFile = Pattern.compile("[^-_.A-Za-z0-9]");
+    		Matcher isValid = validateFile.matcher(fileName);
+    		Pattern fileExtension = Pattern.compile("\\." + extension + "$");
+    		Matcher hasExtension = fileExtension.matcher(fileName);
+    		
+    		if(isValid.find()){
+    			System.out.println("Please enter a valid filename");
+    			fileName = createFileName(extension);
+    		}
+    		if(!hasExtension.find()){
+    			fileName = fileName + "." + extension;
+    		}
+    		System.out.print("Filename: " + fileName);
+    		return fileName;
+    	}
+    	catch(Exception e){
+    		System.out.println("Trouble getting name of file to create");
+    		System.out.println(e);
+    		System.exit(0);
+    	}
+    	return "default." + extension;
     }
 }
