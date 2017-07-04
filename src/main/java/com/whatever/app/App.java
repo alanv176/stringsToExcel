@@ -14,14 +14,12 @@ package com.whatever.app;
 public class App 
 {
 	public static void main( String[] args ){
-		String sourceRoute = null;
-
 		switch(args[0]){
 		case "generate":
 			System.out.println("");
 			try{
 				if(args[1] != null){
-					Generator.saveDefaultRoute(sourceRoute);
+					Generator.saveDefaultRoute(args[1]);
 				}
 			}
 			catch(Exception e){
@@ -32,7 +30,7 @@ public class App
 		case "update":
 			try{
 				if(args[1] != null){
-					Updater.saveDefaultRoute(sourceRoute);
+					Updater.saveDefaultRoute(args[1]);
 				}
 			}
 			catch(Exception e){
@@ -42,6 +40,14 @@ public class App
 			break;
 			
 		case "insert":
+			System.out.println("");
+			break;
+			
+		case "setDefault":
+			Utils.setDefaults();
+			break;
+			
+		case "reset":
 			System.out.println("");
 			break;
 			

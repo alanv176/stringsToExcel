@@ -1,6 +1,5 @@
 package com.whatever.app;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,17 +25,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Generator {
 	
-	public static final Path tempFile = Paths.get("./tempFile.txt");
-	private static Scanner s = new Scanner(System.in);
-	
 	public static void saveDefaultRoute(String sourceRoute){
 		sourceRoute = sourceRoute.replaceFirst("^~", System.getProperty("user.home"));
 		try{
 			System.out.println("Would you like to save this as the default route?(y/n)");
-			if(s.nextLine().equals("y")){
+			if(Utils.s.nextLine().equals("y")){
 				try(FileOutputStream output = new FileOutputStream("default.properties")){
-					System.out.println("Creating default.properties");
-					Properties prop = new Properties();
+					Properties prop = Utils.getDefaults();
 					
 					prop.setProperty("source", sourceRoute);
 					prop.store(output, null);	
@@ -57,19 +52,25 @@ public class Generator {
 	
 	public static void useDefaultRoute(){
 		String sourceRoute;
-		try(FileInputStream input = new FileInputStream("default.properties")){
-			Properties prop = new Properties();
-
-			prop.load(input);
+		try{
+			Properties prop = Utils.getDefaults();
 
 			sourceRoute = prop.getProperty("source");
+			if(sourceRoute == null){
+			    throw new IllegalArgumentException("Default can't be null");
+			}
+			Path path = Paths.get(sourceRoute);
+			if(!Files.isRegularFile(path)){
+				System.out.println("The default path does not lead to a valid file");
+				throw new IllegalArgumentException("The file does not exist");
+			}
 			
 			generateXls(sourceRoute);
 		}
 		catch(Exception err){
 			System.out.println("No defaults set, please provide a route to source file:");
 			try{
-				sourceRoute = s.nextLine();
+				sourceRoute = Utils.s.nextLine();
 				saveDefaultRoute(sourceRoute);
 			}
 			catch(Exception e){
@@ -84,7 +85,7 @@ public class Generator {
 			Path source = Paths.get(sourceRoute);
 
 			System.out.println("Copying file");
-			Files.copy(source, tempFile, StandardCopyOption.REPLACE_EXISTING);
+			Files.copy(source, Utils.tempFile, StandardCopyOption.REPLACE_EXISTING);
 
 		}
 		catch(Exception e){
@@ -95,7 +96,7 @@ public class Generator {
 	}
 	
 	public static void getSubstring(){
-		try(Scanner contentScanner = new Scanner(tempFile).useDelimiter("\\Z")){
+		try(Scanner contentScanner = new Scanner(Utils.tempFile).useDelimiter("\\Z")){
 			String content = contentScanner.next();
 			System.out.println("Substring obtained");
 			Pattern pattern = Pattern.compile("(?<LangEN>Lang_EN\\s?:\\s?\\{.*?\\})", Pattern.DOTALL);
@@ -104,7 +105,7 @@ public class Generator {
 			if(matcher.find()){
 				System.out.println("Lang_EN found");
 				String LangEN = matcher.group("LangEN");
-				Files.write(tempFile, LangEN.getBytes());
+				Files.write(Utils.tempFile, LangEN.getBytes());
 			}
 			else{
 				System.out.println("Substring not found");
@@ -125,7 +126,7 @@ public class Generator {
     	String createdFileName = createFileName("xlsx");
     	
     	try(FileOutputStream outputStream = new FileOutputStream(Paths.get("./" + createdFileName).toFile());
-    		Scanner language = new Scanner(tempFile);
+    		Scanner language = new Scanner(Utils.tempFile);
     		XSSFWorkbook workbook = new XSSFWorkbook();	){
     		
     		Pattern comment = Pattern.compile("^\\s*?#(.*$)");
@@ -189,7 +190,7 @@ public class Generator {
         	
             workbook.write(outputStream);
         			
-        	Files.delete(tempFile);
+        	Files.delete(Utils.tempFile);
         	System.out.println("Completed successfully");
     	} 	
     	catch(Exception e){
@@ -221,7 +222,7 @@ public class Generator {
     public static String createFileName(String extension){
     	try{
     		System.out.println("What would you like to name the new file?");
-    		String fileName = s.nextLine();
+    		String fileName = Utils.s.nextLine();
     		
     		Pattern validateFile = Pattern.compile("[^-_.A-Za-z0-9]");
     		Matcher isValid = validateFile.matcher(fileName);
