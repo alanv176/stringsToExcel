@@ -4,14 +4,16 @@ import java.nio.file.Files;
 
 /*
  * TODO: Make this or another file that updates existing excel sheets
- *       Set defaults command that sets all defaults
- *           Read properties, if blank keep property otherwise override
  *       Use a file chooser instead of requiring user to manually type out path
  *       Print useful error messages and errors for each catch
- *       Comment code
+ *       Comment code, javadocs
  *       Allow for doing multiple files at once
  *       Ask to use default or specify new path
  *       Account for special symbols e.g euro
+ *       If no destination path use current directory
+ *         Separate destination path and naming to allow destination specification
+ *         possible default destination folder
+ *       Should probably not let nonsense get through to saveDefaultRoute, do check in main or at start of method
  */
 public class App 
 {
@@ -21,10 +23,12 @@ public class App
 			System.out.println("");
 			try{
 				if(args[1] != null){
+					System.out.println("Using specified path");
 					Generator.saveDefaultRoute(args[1]);
 				}
 			}
 			catch(Exception e){
+				System.out.println("No source specified, trying default");
 				Generator.useDefaultRoute();
 			}
 			break;
@@ -36,6 +40,7 @@ public class App
 				}
 			}
 			catch(Exception e){
+				System.out.println("No source specified, trying default");
 				Updater.useDefaultRoute();
 			}
 			System.out.println("");
@@ -68,7 +73,12 @@ public class App
 			}
 			
 		case "help":
-			System.out.println("");
+			try{
+				Helper.displayHelp(args[1]);
+			}
+			catch(Exception e){
+				Helper.displayHelp();
+			}
 			break;
 			
 		default:
