@@ -27,7 +27,5 @@ public class Updater extends Generator{
 			System.out.println(e);
 		}
 		
-		
-		
 	}
 }

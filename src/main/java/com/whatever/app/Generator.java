@@ -96,7 +96,7 @@ public class Generator {
 	}
 	
 	public static void getSubstring(){
-		try(Scanner contentScanner = new Scanner(Utils.tempFile).useDelimiter("\\Z")){
+		try(Scanner contentScanner = new Scanner(Utils.tempFile, "UTF-8").useDelimiter("\\Z")){
 			String content = contentScanner.next();
 			System.out.println("Substring obtained");
 			Pattern pattern = Pattern.compile("(?<LangEN>Lang_EN\\s?:\\s?\\{.*?\\})", Pattern.DOTALL);
@@ -126,7 +126,7 @@ public class Generator {
     	String createdFileName = createFileName("xlsx");
     	
     	try(FileOutputStream outputStream = new FileOutputStream(Paths.get("./" + createdFileName).toFile());
-    		Scanner language = new Scanner(Utils.tempFile);
+    		Scanner language = new Scanner(Utils.tempFile, "UTF-8");
     		XSSFWorkbook workbook = new XSSFWorkbook();	){
     		
     		Pattern comment = Pattern.compile("^\\s*?#(.*$)");
@@ -230,11 +230,11 @@ public class Generator {
     		String fileName = Utils.s.nextLine();
     		
     		Pattern validateFile = Pattern.compile("[^-_.A-Za-z0-9]");
-    		Matcher isValid = validateFile.matcher(fileName);
+    		Matcher isNotValid = validateFile.matcher(fileName);
     		Pattern fileExtension = Pattern.compile("\\." + extension + "$");
     		Matcher hasExtension = fileExtension.matcher(fileName);
     		
-    		while(isValid.find()){
+    		while(isNotValid.find()){
     			System.out.println("Please enter a valid filename");
     			fileName = Utils.s.nextLine();
     			hasExtension = fileExtension.matcher(fileName);
@@ -271,8 +271,8 @@ public class Generator {
     	pathToNewFile = pathToNewFile.replaceFirst("~", System.getProperty("user.home"));
     	
     	try(FileOutputStream outputStream = new FileOutputStream(Paths.get(pathToNewFile).toFile());
-    		Scanner language = new Scanner(Utils.tempFile);
-    		XSSFWorkbook workbook = new XSSFWorkbook();	){
+    		Scanner language = new Scanner(Utils.tempFile, "UTF-8");
+    		XSSFWorkbook workbook = new XSSFWorkbook();){
     		
     		Pattern comment = Pattern.compile("^\\s*?#(.*$)");
         	Pattern content = Pattern.compile(":\\s?['\"](.*)['\"]$");
